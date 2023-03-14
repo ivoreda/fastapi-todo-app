@@ -23,13 +23,13 @@ ALGORITHM = "HS256"
 app = FastAPI()
 
 @app.get('/get_todo/{todo_id}')
-async def get_todo(todo_id):
+async def get_todo(todo_id, token:str = Depends(oauth2_scheme)):
     todo = json.loads(Todo.objects.get(todo_id=todo_id).to_json())
     return {"todo item": todo}
 
 
 @app.post('/new_todo')
-async def new_todo(todo: NewTodo):
+async def new_todo(todo: NewTodo, token:str = Depends(oauth2_scheme)):
     todo = Todo(todo_id=Todo.objects.count() + 1,
                 name=todo.name,
                 details=todo.details)
@@ -37,7 +37,7 @@ async def new_todo(todo: NewTodo):
     return {"message": "todo created successfully"}
 
 @app.patch('/edit_todo/{todo_id}')
-async def edit_todo(data: EditTodoRequest, todo_id):
+async def edit_todo(data: EditTodoRequest, todo_id, token:str = Depends(oauth2_scheme)):
     todo = Todo.objects.get(todo_id=todo_id)
     print(todo.to_json())
     if todo:
@@ -53,7 +53,7 @@ async def edit_todo(data: EditTodoRequest, todo_id):
         return {"detail":f"todo with id {todo_id} does not exist"}
 
 @app.patch('/mark_as_done/{todo_id}')
-async def mark_as_done(data: MarkAsDone, todo_id):
+async def mark_as_done(data: MarkAsDone, todo_id, token:str = Depends(oauth2_scheme)):
     todo = Todo.objects.get(todo_id=todo_id)
     if todo:
         if data.done is not None:
@@ -64,12 +64,12 @@ async def mark_as_done(data: MarkAsDone, todo_id):
         return {"detail":f"todo with id {todo_id} does not exist"}
 
 @app.get('/get_all_todos')
-async def get_all_todos():
+async def get_all_todos(token:str = Depends(oauth2_scheme)):
     todos = json.loads(Todo.objects().to_json())
     return {"todos": todos}
 
 @app.delete('/delete_todo/{todo_id}')
-async def delete_todo(todo_id):
+async def delete_todo(todo_id, token:str = Depends(oauth2_scheme)):
     todo = Todo.objects.get(todo_id=todo_id)
     if todo:
         todo.delete()
