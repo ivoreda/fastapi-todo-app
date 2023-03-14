@@ -78,7 +78,14 @@ async def mark_as_done(data: MarkAsDone, todo_id, token:str = Depends(oauth2_sch
 @app.get('/get_all_todos')
 async def get_all_todos(token:str = Depends(oauth2_scheme)):
     todos = json.loads(Todo.objects().to_json())
-    return {"todos": todos}
+    user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+    username = user['sub']
+    my_todo = []
+    for i in todos:
+        if i['user'] == username:
+            my_todo.append(i)
+    print(my_todo)
+    return {"todos": my_todo}
 
 @app.delete('/delete_todo/{todo_id}')
 async def delete_todo(todo_id, token:str = Depends(oauth2_scheme)):
@@ -138,20 +145,3 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @app.post('/')
 async def home(token: str = Depends(oauth2_scheme)):
     return {"token": token}
-
-
-# def fake_decode_token(token):
-#     return User(
-#         username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
-#     )
-
-# async def get_current_user(token: str = Depends(oauth2_scheme)):
-#     user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
-#     username = user['sub']
-#     print(username)
-#     return username
-
-
-# @app.get("/users/me")
-# async def read_users_me(current_user: User = Depends(get_current_user)):
-#     return current_user
