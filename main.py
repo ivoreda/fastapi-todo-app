@@ -30,36 +30,48 @@ async def get_todo(todo_id, token:str = Depends(oauth2_scheme)):
 
 @app.post('/new_todo')
 async def new_todo(todo: NewTodo, token:str = Depends(oauth2_scheme)):
+    user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+    username = user['sub']
     todo = Todo(todo_id=Todo.objects.count() + 1,
                 name=todo.name,
-                details=todo.details)
+                details=todo.details,
+                user=username)
     todo.save()
     return {"message": "todo created successfully"}
 
 @app.patch('/edit_todo/{todo_id}')
 async def edit_todo(data: EditTodoRequest, todo_id, token:str = Depends(oauth2_scheme)):
     todo = Todo.objects.get(todo_id=todo_id)
-    print(todo.to_json())
+    user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+    username = user['sub']
     if todo:
-        if data.name is not None:
-            todo.name = data.name
-        if data.details is not None:
-            todo.details = data.details
-        if data.done is not None:
-            todo.done = data.done
-        todo.save()
-        return {"message": "todo editted successfully"}
+        if username == todo.user:
+            if data.name is not None:
+                todo.name = data.name
+            if data.details is not None:
+                todo.details = data.details
+            if data.done is not None:
+                todo.done = data.done
+            todo.save()
+            return {"message": "todo editted successfully"}
+        else:
+            return {"message": "you cannot edit this todo item. it is not yours."}
     else:
         return {"detail":f"todo with id {todo_id} does not exist"}
 
 @app.patch('/mark_as_done/{todo_id}')
 async def mark_as_done(data: MarkAsDone, todo_id, token:str = Depends(oauth2_scheme)):
     todo = Todo.objects.get(todo_id=todo_id)
+    user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+    username = user['sub']
     if todo:
-        if data.done is not None:
-            todo.done = data.done
-        todo.save()
-        return {"message": "todo marked as done successfully"}
+        if username == todo.user:
+            if data.done is not None:
+                todo.done = data.done
+            todo.save()
+            return {"message": "todo marked as done successfully"}
+        else:
+            return {"message": "you cannot edit this todo item. it is not yours."}
     else:
         return {"detail":f"todo with id {todo_id} does not exist"}
 
@@ -71,9 +83,14 @@ async def get_all_todos(token:str = Depends(oauth2_scheme)):
 @app.delete('/delete_todo/{todo_id}')
 async def delete_todo(todo_id, token:str = Depends(oauth2_scheme)):
     todo = Todo.objects.get(todo_id=todo_id)
+    user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+    username = user['sub']
     if todo:
-        todo.delete()
-        return {"message": "todo deleted successfully"}
+        if username == todo.user:
+            todo.delete()
+            return {"message": "todo deleted successfully"}
+        else:
+            return {"message": "you cannot delete this todo item. it is not yours."}
     else:
         raise HTTPException(status_code=404, detail="todo could not be found")
 
@@ -123,16 +140,18 @@ async def home(token: str = Depends(oauth2_scheme)):
     return {"token": token}
 
 
-def fake_decode_token(token):
-    return User(
-        username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
-    )
+# def fake_decode_token(token):
+#     return User(
+#         username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
+#     )
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = fake_decode_token(token)
-    return user
+# async def get_current_user(token: str = Depends(oauth2_scheme)):
+#     user = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+#     username = user['sub']
+#     print(username)
+#     return username
 
 
-@app.get("/users/me")
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+# @app.get("/users/me")
+# async def read_users_me(current_user: User = Depends(get_current_user)):
+#     return current_user

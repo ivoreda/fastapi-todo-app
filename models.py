@@ -31,7 +31,7 @@ class NewUser(BaseModel):
 class Todo(Document):
     todo_id: int = IntField(min_value=1)
     name: str = StringField(max_length=255, required=True)
-    user = ReferenceField(User)
+    user: str = StringField()
     details: Optional[str] = StringField(required=True)
     done: bool = BooleanField(required=True, default=False)
 
